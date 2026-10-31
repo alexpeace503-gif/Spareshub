@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#faf7ff">
+<title>Spares Hub - Mobile Parts Compatibility Finder</title>
+<meta name="description" content="Find which mobile models share the same spare part, then buy from shops across Tamil Nadu.">
+<meta property="og:title" content="Spares Hub - Mobile Parts Compatibility Finder">
+<meta property="og:description" content="Mobile spare parts compatibility finder and marketplace for technicians.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 48 48%22%3E%3Crect width=%2248%22 height=%2248%22 rx=%2214%22 fill=%22%237c3aed%22/%3E%3Cpath d=%22M24 7.5l14.3 8.25v16.5L24 40.5l-14.3-8.25v-16.5z%22 fill=%22none%22 stroke=%22white%22 stroke-width=%222.4%22/%3E%3Cpath d=%22M30 19.5c-1.4-1.9-3.6-2.9-6.2-2.9-3.4 0-5.8 1.7-5.8 4.3 0 6.4 12.2 3 12.2 9.6 0 2.8-2.6 4.5-6 4.5-2.7 0-5.1-1.1-6.6-3%22 fill=%22none%22 stroke=%22white%22 stroke-width=%223.2%22 stroke-linecap=%22round%22/%3E%3Ccircle cx=%2238.3%22 cy=%2215.75%22 r=%223%22 fill=%22%23fde047%22/%3E%3C/svg%3E">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px)}
+body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:radial-gradient(circle at 0 0,#f3e8ff 0,transparent 40%),radial-gradient(circle at 100% 30%,#ffe4ec 0,transparent 35%),#faf7ff;color:#1e1b2e;background-attachment:fixed}
+.ns::-webkit-scrollbar{display:none}.ns{scrollbar-width:none}
+.f{width:100%;padding:.75rem;background:#fff;border:1px solid #e4dcf7;border-radius:.85rem;color:#1e1b2e;font-size:16px}
+.f:focus{outline:2px solid #a78bfa;border-color:transparent}
+.card{background:#fff;border:1px solid #efe8fb;border-radius:1.25rem;box-shadow:0 4px 18px -8px rgba(109,74,255,.18)}
+@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}.card{animation:up .35s ease both}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes sheetUp{from{transform:translateY(36px);opacity:0}to{transform:none;opacity:1}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.floaty{animation:floaty 2.6s ease-in-out infinite}.sheet{animation:sheetUp .35s cubic-bezier(.2,.8,.2,1) both}
+.skel{background:linear-gradient(90deg,#efe9fb 25%,#f8f4ff 50%,#efe9fb 75%);background-size:200% 100%;animation:shimmer 1.4s infinite}
+button:active{transform:scale(.97)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body class="max-w-md mx-auto min-h-screen">
+<header class="sticky top-0 z-40 bg-white/80 backdrop-blur px-4 py-3 border-b border-violet-100 flex justify-between items-center">
+  <div class="flex items-center gap-2.5">
+    <span id="logoBox" class="w-10 h-10 shrink-0 block"><img id="logoImg" src="logo.png" alt="Spares Hub" class="w-10 h-10 rounded-xl object-cover" onerror="window.useSvgLogo&&useSvgLogo()"></span>
+    <div><div class="flex items-center gap-1.5"><h1 class="font-extrabold text-lg">Spares Hub</h1><span id="proBadge" class="hidden bg-amber-100 border border-amber-300 text-amber-700 text-[9px] font-extrabold px-1.5 py-0.5 rounded">PRO</span></div>
+    <p class="text-[10px] text-violet-500 font-semibold">Spares &amp; Scrap Network</p></div>
+  </div>
+  
+<a id="adminLink" href="admin.html" class="hidden text-[11px] font-bold bg-violet-100 text-violet-700 px-3 py-1.5 rounded-xl">⚙️ Admin</a></header>
+
+<main class="p-4 pb-28">
+<section id="tab-home" class="space-y-4">
+  <div class="flex bg-violet-100 rounded-2xl p-1 text-xs font-bold"><button onclick="tab('home')" class="flex-1 py-2 rounded-xl bg-white shadow text-violet-700">🛍 Parts for sale</button><button onclick="tab('req')" class="flex-1 py-2 rounded-xl text-slate-500">📋 Wanted</button></div>
+  <select id="city" onchange="render()" class="f !py-2 !text-xs font-semibold"><option value="ALL">📍 All Tamil Nadu</option></select>
+  <p id="offer" class="hidden bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold rounded-xl p-3 text-center">🎉 Launch offer: all seller contacts FREE until 30 Nov 2026</p>
+  <p id="dbNote" class="hidden bg-amber-50 border border-amber-200 text-amber-700 text-[11px] rounded-xl p-3">Could not connect to the database. Check your internet and refresh the page.</p>
+  <div class="rounded-3xl p-5 text-white bg-gradient-to-br from-violet-600 via-fuchsia-500 to-rose-400 shadow-xl shadow-violet-300/40 relative overflow-hidden">
+    <div class="absolute -right-3 -bottom-6 text-8xl opacity-20">🔧</div>
+    <p class="text-[11px] font-bold opacity-90">B2B marketplace for technicians</p>
+    <h2 class="text-xl font-extrabold leading-tight mt-1">Find any spare part,<br>from shops near you.</h2>
+    <div class="flex gap-2 mt-3 text-[11px] font-bold"><span class="bg-white/20 rounded-full px-3 py-1"><b id="sCount">0</b> parts</span><span class="bg-white/20 rounded-full px-3 py-1"><b id="sShops">0</b> shops</span><span class="bg-white/20 rounded-full px-3 py-1"><b id="sCities">0</b> cities</span></div>
+  </div>
+  <input id="q" oninput="render()" placeholder="🔍 Search iPhone display, RAM, TV board..." class="f shadow-sm">
+  <div id="conds" class="flex gap-2 overflow-x-auto ns"></div>
+  <div id="cats" class="flex gap-2 overflow-x-auto ns"></div>
+  <div class="flex gap-2">
+    <select id="sort" onchange="render()" class="f !py-2 !text-xs font-semibold"><option value="new">Newest first</option><option value="low">Price: Low to High</option><option value="high">Price: High to Low</option></select>
+    <button id="favBtn" onclick="favOnly=!favOnly;render()" class="shrink-0 px-4 rounded-xl text-xs font-extrabold border"></button>
+  </div>
+  <div><div class="flex justify-between items-center mb-2"><h2 class="text-xs font-extrabold uppercase tracking-wider text-rose-500">🔥 Urgent Wanted</h2><button onclick="tab('req')" class="text-[11px] font-bold text-violet-600">See all →</button></div>
+  <div id="urgent" class="flex gap-3 overflow-x-auto ns snap-x pb-1"></div></div>
+  <h2 class="text-xs font-extrabold uppercase tracking-wider text-violet-400">Available Spares (<span id="count">0</span>)</h2>
+  <div id="list" class="space-y-3"></div>
+</section>
+
+<section id="tab-req" class="hidden space-y-4">
+  <div class="flex bg-violet-100 rounded-2xl p-1 text-xs font-bold"><button onclick="tab('home')" class="flex-1 py-2 rounded-xl text-slate-500">🛍 Parts for sale</button><button onclick="tab('req')" class="flex-1 py-2 rounded-xl bg-white shadow text-violet-700">📋 Wanted</button></div>
+  <div class="card p-4 !bg-gradient-to-br from-rose-50 to-white">
+    <h2 class="text-base font-extrabold">📋 Wanted Spares Board</h2>
+    <p class="text-xs text-slate-500 mt-1">Post the part you need with a photo. Sellers who have stock will contact you directly.</p>
+    <button onclick="openM('reqM')" class="mt-3 w-full bg-gradient-to-r from-rose-500 to-fuchsia-500 text-white py-2.5 rounded-xl text-xs font-extrabold shadow-lg shadow-rose-200">+ Post What You Need</button>
+  </div>
+  <div id="reqs" class="space-y-3"></div>
+</section>
+
+<section id="tab-pro" class="hidden space-y-4">
+  <div id="adminCard" class="hidden card p-4 space-y-3 !border-violet-300"><h3 class="font-extrabold text-sm">⚙️ Admin (owner only)</h3><a href="admin.html" class="block text-center bg-violet-600 text-white font-bold py-2.5 rounded-xl text-sm">Open dashboard</a><p class="text-[11px] text-slate-500">Brand logos. Tap a brand to upload its logo:</p><div id="brandAdm" class="flex flex-wrap gap-2"></div><p class="text-[11px] text-slate-500">Model photos: open any group and tap 📷, or use 📷 in the Models tab.</p><button onclick="ownerOut()" class="text-[11px] text-rose-500 font-bold">Sign out</button></div>
+  <div class="card p-4"><p class="text-xs text-slate-500">Your plan</p><p id="planNow" class="text-xl font-extrabold"></p><p id="offerNote" class="text-[11px] text-emerald-600 font-bold mt-1"></p>
+    <div class="flex gap-2 mt-3"><input id="restPh" type="tel" inputmode="numeric" placeholder="Phone used for your plan" class="f"><button onclick="restorePlan()" class="shrink-0 bg-violet-600 text-white text-xs font-bold px-4 rounded-xl">Restore</button></div></div>
+  <div id="plans" class="space-y-3"></div>
+  <div class="text-center"><button id="ownBtn" onclick="openM('ownM')" class="text-[11px] text-slate-400 underline">Owner login</button></div>
+  <div id="payBox" class="hidden card p-4 space-y-3">
+    <h3 class="font-extrabold text-sm">Activate <span id="payPlan"></span> plan</h3>
+    <p class="text-xs text-slate-500">1) Pay <b id="payAmt"></b> by UPI. 2) Enter your phone and the UTR / transaction ID. 3) We activate your plan after checking.</p>
+    <button onclick="payUPI()" class="w-full bg-emerald-500 text-white font-extrabold py-3 rounded-2xl text-sm">📲 Pay with UPI app</button>
+    <p class="text-[11px] text-slate-400 text-center">UPI ID: <b id="upiId"></b> (if the button does not open)</p>
+    <input id="payPh" type="tel" inputmode="numeric" placeholder="Your WhatsApp number" class="f"><input id="payUtr" placeholder="UTR / transaction ID" class="f">
+    <button onclick="submitPay()" class="w-full bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white font-extrabold py-3 rounded-2xl text-sm">Submit for activation</button>
+  </div>
+</section>
+<section id="tab-find" class="-mx-4 -mt-4">
+  <div class="bg-gradient-to-b from-violet-700 via-violet-600 to-fuchsia-500 px-4 pt-4 pb-14 space-y-3">
+    <input id="fq" oninput="renderFinder()" placeholder="🔍  Search models, brands..." class="w-full px-4 py-3.5 rounded-2xl text-sm text-slate-800 bg-white shadow-lg outline-none" style="font-size:16px">
+    <div id="fParts" class="flex gap-2.5 overflow-x-auto ns pb-1"></div>
+  </div>
+  <div class="-mt-9 bg-[#faf7ff] rounded-t-[2rem] px-4 pt-5 space-y-4 min-h-[60vh]">
+    <h2 class="text-base font-extrabold">Browse By Brand</h2>
+    <div id="fBrands" class="flex gap-3 overflow-x-auto ns pb-1"></div>
+    <div class="flex justify-between items-center"><h2 id="fTitle" class="text-base font-extrabold"></h2><div class="flex bg-violet-100 rounded-xl p-1 text-[11px] font-bold"><button id="sA" onclick="fSort='az';renderFinder()" class="px-3 py-1 rounded-lg">A-Z</button><button id="sM" onclick="fSort='models';renderFinder()" class="px-3 py-1 rounded-lg">Most models</button></div></div>
+    <div id="fres" class="space-y-3 pb-4"></div>
+  </div>
+</section>
+<section id="tab-inv" class="hidden space-y-4"><div><h2 class="text-lg font-extrabold">🔖 My Inventory</h2><p class="text-xs text-slate-500">Compatibility groups you saved. Tap the bookmark on any group to add it here.</p></div><div id="invl" class="space-y-3"></div></section>
+<section id="tab-models" class="hidden space-y-4"><div><h2 class="text-lg font-extrabold">📱 All Models</h2><p class="text-xs text-slate-500">Tap a model to see its compatible parts.</p></div><input id="mq" oninput="renderModels()" placeholder="🔍 Filter models..." class="f shadow-sm"><div id="mlist" class="space-y-2"></div></section>
+</main>
+
+<div id="postM" class="hidden fixed inset-0 z-50 bg-violet-950/50 backdrop-blur-sm flex items-end justify-center">
+  <div class="bg-white w-full max-w-md rounded-t-3xl p-5 space-y-3 max-h-[90vh] overflow-y-auto">
+    <div class="flex justify-between"><h3 class="font-extrabold">📦 Sell Spare Part</h3><button onclick="closeM('postM')" class="text-slate-400 text-lg">✕</button></div>
+    <input id="pTitle" placeholder="Part name and model * (e.g. LG fridge PCB)" class="f">
+    <div class="grid grid-cols-2 gap-2"><select id="pCat" class="f"></select><select id="pCond" class="f"></select>
+    <input id="pPrice" type="number" inputmode="numeric" placeholder="Price ₹ *" class="f"><select id="pCity" class="f"></select>
+    <input id="pShop" placeholder="Shop name *" class="f"><input id="pPhone" type="tel" inputmode="numeric" placeholder="WhatsApp 10 digit *" class="f"></div>
+    <input id="pNote" placeholder="Notes (condition, warranty...)" class="f"><input id="pFits" placeholder="Fits models, comma separated (optional)" class="f"><div><label class="block border-2 border-dashed border-violet-200 rounded-2xl p-3 text-center text-xs font-bold text-violet-600 cursor-pointer">📷 Add photos <span id="lphCnt">(0)</span><input id="lPhotos" type="file" accept="image/*" multiple class="hidden" onchange="pickListPhotos(this)"></label><div id="lphPrev" class="flex gap-2 mt-2 overflow-x-auto ns"></div><p id="lphNote" class="text-[10px] text-slate-400 mt-1"></p></div>
+    <button onclick="addListing()" class="w-full bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white font-extrabold py-3.5 rounded-2xl text-xs shadow-lg shadow-violet-200">🚀 Publish Now</button>
+  </div>
+</div>
+<div id="reqM" class="hidden fixed inset-0 z-50 bg-violet-950/50 backdrop-blur-sm flex items-end justify-center">
+  <div class="bg-white w-full max-w-md rounded-t-3xl p-5 space-y-3 max-h-[90vh] overflow-y-auto">
+    <div class="flex justify-between"><h3 class="font-extrabold">📢 Post Requirement</h3><button onclick="closeM('reqM')" class="text-slate-400 text-lg">✕</button></div>
+    <input id="rItem" placeholder="What part do you need? *" class="f">
+    <select id="rCat" class="f"></select>
+    <div id="photoRow"><label class="block border-2 border-dashed border-violet-200 rounded-2xl p-3 text-center text-xs font-bold text-violet-600 cursor-pointer">📷 Add a photo of the part (optional)<input id="rPhoto" type="file" accept="image/*" class="hidden" onchange="pickPhoto(this)"></label>
+    <img id="rPrev" alt="" class="hidden mt-2 w-full h-36 object-cover rounded-2xl"></div>
+    <div class="grid grid-cols-2 gap-2"><select id="rCity" class="f"></select><input id="rShop" placeholder="Name / Shop *" class="f"></div>
+    <input id="rPhone" type="tel" inputmode="numeric" placeholder="WhatsApp 10 digit *" class="f">
+    <button id="rBtn" onclick="addReq()" class="w-full bg-gradient-to-r from-rose-500 to-fuchsia-500 text-white font-extrabold py-3.5 rounded-2xl text-xs">🔥 Broadcast</button>
+  </div>
+</div>
+<div id="payM" class="hidden fixed inset-0 z-50 bg-violet-950/50 backdrop-blur-sm flex items-center justify-center p-4">
+  <div class="bg-white border-2 border-amber-300 w-full max-w-sm rounded-3xl p-5 text-center space-y-3">
+    <div class="text-3xl">🔒</div><h3 class="font-extrabold">Unlock Direct Dealer Contact</h3>
+    <p class="text-xs text-slate-500">Choose a plan (from ₹49/month) to see this seller’s phone and WhatsApp number.</p>
+    <p class="bg-violet-50 border border-violet-100 rounded-xl p-3 text-[11px] text-left">🏪 <b id="payShop"></b><br>📞 <span id="payPhone"></span></p>
+    <button onclick="unlockPro()" class="w-full bg-gradient-to-r from-amber-400 to-orange-400 text-amber-950 font-black py-3 rounded-xl text-xs">⚡ See plans</button>
+    <button onclick="closeM('payM')" class="w-full text-slate-400 text-xs py-1.5">Maybe later</button>
+  </div>
+</div>
+
+<div id="ownM" class="hidden fixed inset-0 z-50 bg-violet-950/50 backdrop-blur-sm flex items-center justify-center p-4"><div class="bg-white w-full max-w-sm rounded-3xl p-5 space-y-3"><div class="flex justify-between"><h3 class="font-extrabold">Owner login</h3><button onclick="closeM('ownM')" class="text-slate-400 text-lg">✕</button></div><input id="ownEm" type="email" placeholder="Email" class="f"><input id="ownPw" type="password" placeholder="Password" class="f"><button onclick="ownerIn()" class="w-full bg-violet-600 text-white font-bold py-3 rounded-xl text-sm">Sign in</button><p id="ownMsg" class="text-xs text-rose-600"></p></div></div>
+<div id="lb" class="hidden fixed inset-0 z-[70] bg-black/95 flex flex-col"><button onclick="closeLb()" class="self-end m-4 text-white text-3xl leading-none">✕</button><div id="lbBody" class="flex-1 flex overflow-x-auto snap-x snap-mandatory ns items-center"></div></div>
+<div id="gView" class="hidden fixed inset-0 z-50 overflow-y-auto bg-[#faf7ff] max-w-md mx-auto"></div>
+<div id="toast" class="hidden fixed top-20 left-1/2 -translate-x-1/2 z-[60] bg-emerald-500 text-white text-xs font-bold px-4 py-2.5 rounded-full shadow-lg"></div>
+<button id="fab" onclick="openM('postM')" class="hidden fixed bottom-24 right-4 z-40 bg-gradient-to-tr from-violet-600 to-fuchsia-500 text-white w-14 h-14 rounded-2xl text-3xl font-extrabold shadow-lg shadow-violet-300 active:scale-95">+</button>
+<nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/90 backdrop-blur border-t border-violet-100 flex justify-around items-center pt-2.5 z-40" style="padding-bottom:calc(0.625rem + env(safe-area-inset-bottom,0px))">
+  <button id="n-find" onclick="tab('find')" class="flex flex-col items-center text-[10px] gap-0.5"><span class="text-lg">🏠</span>Home</button>
+  <button id="n-inv" onclick="tab('inv')" class="flex flex-col items-center text-[10px] gap-0.5"><span class="text-lg">🔖</span>Inventory</button>
+  <button id="n-models" onclick="tab('models')" class="flex flex-col items-center text-[10px] gap-0.5"><span class="text-lg">📱</span>Models</button>
+  <button id="n-home" onclick="tab('home')" class="flex flex-col items-center text-[10px] gap-0.5"><span class="text-lg">🛍</span>Products</button>
+  <button id="n-pro" onclick="tab('pro')" class="flex flex-col items-center text-[10px] gap-0.5"><span class="text-lg">👤</span>Profile</button>
+</nav>
+
+<script>
+const CITIES=['Coimbatore','Chennai','Madurai','Tiruppur','Trichy','Salem'];
+const CATS=[['ALL','🔥','All'],['Mobile','📱','Mobile'],['Laptop/PC','💻','Laptop/PC'],['TV/Appliances','📺','TV Spares'],['Home Appliance','🧊','Appliances']];
+const CONDS=[['ALL','All Condition'],['2nd Hand Pulled','♻️ 2nd Hand Original'],['Brand New','✨ Brand New'],['Scrap / Dead','🛠️ Scrap / For IC']];
+const DEMO_MIN_L=6,DEMO_MIN_R=3;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const load=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}};
+const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+const LOGO_SVG=`<svg class="w-10 h-10 shrink-0 drop-shadow-lg" viewBox="0 0 48 48" role="img" aria-label="Spares Hub logo"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6d28d9"/><stop offset="1" stop-color="#f43f5e"/></linearGradient></defs><rect width="48" height="48" rx="14" fill="url(#lg)"/><path d="M24 7.5l14.3 8.25v16.5L24 40.5l-14.3-8.25v-16.5z" fill="#fff" fill-opacity=".14" stroke="#fff" stroke-width="2.4" stroke-linejoin="round"/><path d="M30 19.5c-1.4-1.9-3.6-2.9-6.2-2.9-3.4 0-5.8 1.7-5.8 4.3 0 6.4 12.2 3 12.2 9.6 0 2.8-2.6 4.5-6 4.5-2.7 0-5.1-1.1-6.6-3" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/><circle cx="38.3" cy="15.75" r="3" fill="#fde047"/></svg>`;
+function useSvgLogo(){const b=document.getElementById('logoBox');if(b)b.innerHTML=LOGO_SVG}
+const UPI_ID='8870114807-1@nyes';
+const PLAN_DEF=[['free','Free',0,['Compatibility preview (6 models per group)','1 photo per listing','Browse all parts for sale']],['basic','Basic',49,['All compatibility details','Up to 5 photos per listing','Seller phone and WhatsApp unlocked']],['standard','Standard',99,['All compatibility details','Up to 10 photos per listing','Seller phone and WhatsApp unlocked']],['pro','Pro',299,['Everything in Standard','Unlimited photos per listing','Best for shops with large stock']]];
+let selPlan='basic';
+const FREE_UNTIL=new Date('2026-11-30T23:59:59+05:30'),PAY_LINK='';
+let G=[],fPart='ALL',fBrand='ALL',fSort='az',inv=load('fm_inv',[]),MODELS=[];
+let L=[],R=[],db=null,owner=false,loaded=false,favOnly=false,pro=Date.now()<FREE_UNTIL,PLAN='free',isAdmin=false,MI={},myPhone=load('fm_phone',''),lph=[],favs=load('fm_fav',[]),cat='ALL',cond='ALL',pending=null;
+
+// Sample data fades out as real posts arrive
+const fade=(a,min)=>{const real=a.filter(x=>!x.demo);return real.concat(a.filter(x=>x.demo).slice(0,Math.max(0,min-real.length)))};
+const opts=(el,arr,fn)=>{el.innerHTML=arr.map(fn).join('')};
+function init(){
+  const li=document.getElementById('logoImg');if(li&&li.complete&&li.naturalWidth===0)useSvgLogo();
+  $('city').insertAdjacentHTML('beforeend',CITIES.map(c=>`<option value="${c}">📍 ${c}</option>`).join(''));
+  opts($('pCat'),CATS.slice(1),c=>`<option value="${c[0]}">${c[1]} ${c[2]}</option>`);
+  opts($('pCond'),CONDS.slice(1),c=>`<option value="${c[0]}">${c[1]}</option>`);
+  opts($('pCity'),CITIES,c=>`<option>${c}</option>`);opts($('rCity'),CITIES,c=>`<option>${c}</option>`);opts($('rCat'),CATS.slice(1),c=>`<option value="${c[0]}">${c[1]} ${c[2]}</option>`);
+  tab('find');proUI();render();renderReqs();connect();
+}
+function pills(){
+  $('conds').innerHTML=CONDS.map(c=>`<button onclick="cond='${c[0]}';render()" class="shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-bold border ${cond===c[0]?'bg-violet-600 border-violet-600 text-white shadow-md shadow-violet-200':'bg-white border-violet-100 text-slate-600'}">${c[1]}</button>`).join('');
+  $('cats').innerHTML=CATS.map(c=>`<button onclick="cat='${c[0]}';render()" class="shrink-0 min-w-[88px] p-2.5 rounded-2xl flex flex-col items-center gap-1 text-[11px] font-bold border ${cat===c[0]?'bg-fuchsia-50 border-fuchsia-300 text-fuchsia-700':'bg-white border-violet-100 text-slate-600'}"><span class="text-lg">${c[1]}</span>${c[2]}</button>`).join('');
+  $('favBtn').textContent=favOnly?'♥ Saved':'♡ Saved';
+  $('favBtn').className='shrink-0 px-4 rounded-xl text-xs font-extrabold border '+(favOnly?'bg-rose-500 border-rose-500 text-white':'bg-white border-violet-200 text-rose-500');
+}
+const icon=c=>(CATS.find(x=>x[0]===c)||CATS[3])[1];
+function badge(c){const m={'2nd Hand Pulled':['emerald','♻️ 2nd Hand Original'],'Brand New':['amber','✨ Brand New']}[c]||['rose','🛠️ Scrap / For IC'];
+  return `<span class="bg-${m[0]}-100 text-${m[0]}-700 text-[10px] font-bold px-2 py-0.5 rounded-lg">${m[1]}</span>`}
+const fmt=p=>'+91 '+p.slice(2,7)+' '+p.slice(7);
+const mask=p=>'+91 '+p.slice(2,4)+'••• •••'+p.slice(-2)+' (locked)';
+function ago(t){const m=Math.floor((Date.now()-t)/60000);if(m<1)return'Just now';if(m<60)return m+' mins ago';if(m<1440)return Math.floor(m/60)+' hours ago';return Math.floor(m/1440)+' days ago'}
+function render(){
+  pills();
+  const all=fade(L.filter(x=>x.demo||Date.now()-x.id<45*864e5),DEMO_MIN_L);
+  $('sCount').textContent=all.length;$('sShops').textContent=new Set(all.map(i=>i.shop)).size;$('sCities').textContent=new Set(all.map(i=>i.city)).size;
+  const q=$('q').value.toLowerCase(),city=$('city').value,so=$('sort').value;
+  const f=all.filter(i=>(cat==='ALL'||i.category===cat)&&(cond==='ALL'||i.condition===cond)&&(city==='ALL'||i.city===city)&&(!favOnly||favs.includes(i.id))&&(i.title+' '+(i.note||'')+' '+i.shop+' '+(i.fits||'')).toLowerCase().includes(q));
+  f.sort((a,b)=>so==='low'?a.price-b.price:so==='high'?b.price-a.price:b.id-a.id);
+  $('count').textContent=f.length;
+  if(!loaded){$('list').innerHTML='<p class="text-center text-xs text-slate-400 py-10">Loading…</p>';return}
+  if(!f.length){$('list').innerHTML=`<div class="card text-center py-10 px-4"><p class="text-3xl">🔍</p><p class="text-xs font-bold text-slate-600 mt-1">${favOnly?'No saved parts yet.':'No items match these filters.'}</p><button onclick="openM('reqM')" class="mt-3 bg-violet-600 text-white text-xs font-bold px-4 py-2 rounded-xl">+ Post as Requirement</button></div>`;return}
+  $('list').innerHTML=f.map(i=>`<div id="l${i.id}" class="card p-3.5 space-y-2.5">
+    <div class="flex items-start gap-2">${phs(i).length?`<button onclick="showPhotos(${i.id})" class="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-violet-50"><img src="${esc(phs(i)[0])}" alt="" loading="lazy" class="w-full h-full object-cover"><span class="absolute bottom-0 right-0 bg-black/60 text-white text-[10px] font-bold px-1.5 rounded-tl-lg">📷 ${phs(i).length}</span></button>`:`<span class="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-100 to-fuchsia-100 flex items-center justify-center text-xl shrink-0">${icon(i.category)}</span>`}
+    <div class="min-w-0 flex-1"><h3 class="font-extrabold text-sm leading-snug">${esc(i.title)}</h3><p class="text-[11px] text-slate-500">${esc(i.note||'Direct replacement spare')}</p>${i.fits?`<p class="text-[11px] text-violet-600 font-semibold">Fits: ${esc(i.fits)}</p>`:''}</div>
+    <button onclick="fav(${i.id})" class="text-lg leading-none ${favs.includes(i.id)?'text-rose-500':'text-slate-300'}">${favs.includes(i.id)?'♥':'♡'}</button></div>
+    <div class="flex items-center justify-between pt-2 border-t border-violet-50">
+      <div class="space-y-1 min-w-0"><div class="flex items-center gap-1.5 flex-wrap">${badge(i.condition)}<span class="text-[11px] text-slate-500">📍 ${esc(i.city)}</span></div>
+      <p class="text-[11px] text-slate-500">🏪 ${esc(i.shop)} ${i.verified?'<span class="text-violet-600 font-bold">✔</span>':''}</p>
+      ${pro&&!i.demo?`<p class="text-[11px] text-emerald-600 font-semibold">📞 ${fmt(i.phone)}</p>`:''}
+      <p class="text-[10px] text-slate-400">${i.demo?'Sample listing':ago(i.id)}</p></div>
+      <div class="text-right shrink-0 pl-2"><p class="text-lg font-black text-violet-600">₹${Number(i.price).toLocaleString('en-IN')}</p>
+      <div class="mt-1 flex gap-1.5 justify-end">${pro?`<button onclick="callSeller(${i.id})" class="bg-slate-100 text-slate-700 text-xs px-3 py-2 rounded-xl font-extrabold">📞</button>`:''}
+      <button onclick="contact(${i.id})" class="bg-emerald-500 hover:bg-emerald-400 text-white text-xs px-3 py-2 rounded-xl font-extrabold">${pro?'💬 WhatsApp':'🔒 Contact'}</button></div></div>
+    </div>
+    <div class="flex gap-3 text-[11px] font-bold"><button onclick="share(${i.id})" class="text-violet-500">↗ Share</button><button onclick="report('listing',${i.id})" class="text-slate-400">⚑ Report</button>${owner?`<button onclick="del('listings',${i.id})" class="text-rose-500">🗑 Delete</button>`:''}</div></div>`).join('');
+}
+function reqCard(r,wide){
+  const pic=(r.photo&&r.photo.startsWith(SB_URL))?`<img src="${esc(r.photo)}" alt="" loading="lazy" class="w-full h-full object-cover">`:`<span class="text-5xl">${icon(r.category||'Mobile')}</span>`;
+  return `<div class="card overflow-hidden ${wide?'w-60 shrink-0 snap-start':''}">
+   <div class="relative ${wide?'h-28':'h-44'} bg-gradient-to-br from-rose-100 via-fuchsia-100 to-violet-100 flex items-center justify-center overflow-hidden">${pic}
+   <span class="absolute top-2 left-2 bg-rose-500 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full">${r.demo?'SAMPLE':'🔥 URGENT'}</span>
+   <span class="absolute top-2 right-2 bg-white/90 text-[10px] font-bold px-2 py-0.5 rounded-full">📍 ${esc(r.city)}</span></div>
+   <div class="p-3 space-y-1.5"><h4 class="text-xs font-extrabold leading-snug ${wide?'line-clamp-2':''}">${esc(r.item)}</h4>
+   <p class="text-[10px] text-slate-500">${esc(r.shop)} • ${r.demo?'Sample':ago(r.id)}</p>
+   <button onclick="contactReq(${r.id})" class="w-full bg-violet-600 text-white text-xs py-2 rounded-xl font-bold">💬 I Have Stock</button>
+   ${!wide?`<button onclick="report('request',${r.id})" class="text-[11px] font-bold text-slate-400">⚑ Report</button>`:''}${owner&&!wide?`<button onclick="del('requests',${r.id})" class="text-[11px] font-bold text-rose-500">🗑 Delete</button>`:''}</div></div>`}
+function renderReqs(){
+  const a=fade(R,DEMO_MIN_R).sort((x,y)=>y.id-x.id);
+  $('urgent').innerHTML=a.length?a.slice(0,8).map(r=>reqCard(r,true)).join(''):'<p class="text-xs text-slate-400">No urgent requests yet.</p>';
+  $('reqs').innerHTML=a.map(r=>reqCard(r,false)).join('')||'<p class="text-xs text-slate-400 text-center py-6">No requests yet. Be the first to post.</p>';
+}
+let photoBlob=null;
+function pickPhoto(inp){const f=inp.files[0];if(!f)return;const img=new Image();
+  img.onload=()=>{const k=Math.min(1,900/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
+  c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.toBlob(b=>{photoBlob=b;$('rPrev').src=URL.createObjectURL(b);$('rPrev').classList.remove('hidden')},'image/jpeg',.72)};
+  img.src=URL.createObjectURL(f)}
+function gate(name,phone){pending=null;$('payShop').textContent=name;$('payPhone').textContent=mask(phone);openM('payM')}
+function contact(id){const i=L.find(x=>x.id===id);if(!i)return;if(i.demo)return alert('This is a sample listing, not a real seller.');if(!pro){logClick('paywall',id);pending=id;$('payShop').textContent=i.shop+' ('+i.city+')';$('payPhone').textContent=mask(i.phone);return openM('payM')}
+  logClick('wa_listing',id);wa(i.phone,`Hello, I saw "${i.title}" (₹${i.price}) on Spares Hub. Is it in stock?`)}
+function contactReq(id){const r=R.find(x=>x.id===id);if(!r)return;if(r.demo)return alert('This is a sample request, not a real buyer.');if(!pro){logClick('paywall',id);return gate(r.shop+' ('+r.city+')',r.phone)}
+  logClick('wa_request',id);wa(r.phone,`Hello, I saw your request for "${r.item}" on Spares Hub. I have it in stock.`)}
+function callSeller(id){const i=L.find(x=>x.id===id);if(i&&!i.demo){logClick('call_listing',id);location.href='tel:+'+i.phone}}
+const wa=(p,m)=>window.open('https://wa.me/'+p+'?text='+encodeURIComponent(m),'_blank');
+function fav(id){favs=favs.includes(id)?favs.filter(x=>x!==id):[...favs,id];save('fm_fav',favs);render()}
+async function share(id){const i=L.find(x=>x.id===id);if(!i)return;
+  const text=`${i.title} - ₹${Number(i.price).toLocaleString('en-IN')} in ${i.city} on Spares Hub`;
+  const u=location.origin+location.pathname+'#l'+id;try{if(navigator.share)await navigator.share({title:'Spares Hub',text,url:u});else{await navigator.clipboard.writeText(text+' '+u);alert('Link copied!')}}catch(e){}}
+function unlockPro(){closeM('payM');tab('pro')}
+function proUI(){const free=Date.now()<FREE_UNTIL;$('proBadge').textContent=PLAN!=='free'?PLAN.toUpperCase():'🎉 FREE';$('proBadge').classList.toggle('hidden',!pro);$('offer').classList.toggle('hidden',!free);renderPlans()}
+function applyPlan(p){PLAN=p;pro=Date.now()<FREE_UNTIL||p!=='free';proUI();render();renderFinder()}
+function photoLimit(){const l={free:1,basic:5,standard:10,pro:30}[PLAN];return Date.now()<FREE_UNTIL?Math.max(10,l):l}
+function renderPlans(){
+  const free=Date.now()<FREE_UNTIL;
+  $('planNow').textContent=PLAN==='free'?(free?'Free month (all unlocked)':'Free'):PLAN[0].toUpperCase()+PLAN.slice(1);
+  $('offerNote').textContent=free?'🎉 Every feature is unlocked for everyone until 30 Nov 2026. Paid plans start 1 Dec.':'';
+  $('plans').innerHTML=PLAN_DEF.map(([k,l,pr,fs])=>`<div class="card p-4 ${PLAN===k?'!border-violet-500 ring-2 ring-violet-200':''}"><div class="flex justify-between items-baseline"><h3 class="font-extrabold">${l}</h3><p class="text-2xl font-black text-violet-700">${pr?'₹'+pr:'₹0'}<span class="text-xs font-normal text-slate-400">${pr?' / month':''}</span></p></div><ul class="mt-2 space-y-1 text-xs text-slate-600">${fs.map(x=>`<li>✅ ${x}</li>`).join('')}</ul>${pr?`<button onclick="choosePlan('${k}')" class="mt-3 w-full ${PLAN===k?'bg-emerald-500':'bg-gradient-to-r from-violet-600 to-fuchsia-500'} text-white font-extrabold py-2.5 rounded-xl text-sm">${PLAN===k?'✔ Current plan':'Choose '+l+' ₹'+pr}</button>`:''}</div>`).join('')}
+function choosePlan(k){selPlan=k;const d=PLAN_DEF.find(x=>x[0]===k);$('payPlan').textContent=d[1];$('payAmt').textContent='₹'+d[2];$('upiId').textContent=UPI_ID;$('payPh').value=myPhone?myPhone.slice(2):'';$('payBox').classList.remove('hidden');$('payBox').scrollIntoView({behavior:'smooth',block:'center'})}
+function payUPI(){const d=PLAN_DEF.find(x=>x[0]===selPlan);location.href='upi://pay?pa='+encodeURIComponent(UPI_ID)+'&pn='+encodeURIComponent('Spares Hub')+'&am='+d[2]+'&cu=INR&tn='+encodeURIComponent('Spares Hub '+d[1])}
+async function submitPay(){const ph=phone($('payPh').value),utr=$('payUtr').value.trim();if(!ph)return alert('Enter a valid 10-digit phone number.');if(utr.length<6)return alert('Enter the UTR / transaction ID from your UPI app.');
+  const {error}=await db.from('plan_requests').insert({phone:ph,plan:selPlan,utr:utr.slice(0,40)});if(error)return alert('Could not submit: '+error.message);
+  myPhone=ph;save('fm_phone',ph);$('payBox').classList.add('hidden');$('payUtr').value='';alert('Submitted. We will activate your plan after checking the payment. Use Restore with this phone number to refresh.')}
+async function refreshPlan(){if(!myPhone||!db)return;try{const {data}=await db.rpc('plan_for',{p:myPhone});applyPlan(data&&data[0]?data[0].plan:'free')}catch(e){}}
+async function restorePlan(){const p=phone($('restPh').value);if(!p)return alert('Enter a valid 10-digit phone number.');myPhone=p;save('fm_phone',p);await refreshPlan();toast(PLAN==='free'?'No active plan for this number':'Plan restored')}
+function pickListPhotos(inp){const lim=photoLimit(),sel=[...inp.files],avail=lim-lph.length;
+  if(sel.length>avail)alert('Your plan allows '+lim+' photo(s) per listing.');
+  sel.slice(0,Math.max(0,avail)).forEach(f=>{const img=new Image();img.onload=()=>{const k=Math.min(1,900/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.toBlob(b=>{if(b&&lph.length<lim){lph.push(b);drawLph()}},'image/jpeg',.72)};img.src=URL.createObjectURL(f)});inp.value=''}
+function drawLph(){const e=$('lphCnt');if(!e)return;e.textContent='('+lph.length+'/'+photoLimit()+')';$('lphPrev').innerHTML=lph.map((b,i)=>`<div class="relative shrink-0"><img src="${URL.createObjectURL(b)}" alt="" class="w-16 h-16 object-cover rounded-xl"><button onclick="lph.splice(${i},1);drawLph()" class="absolute -top-1 -right-1 bg-rose-500 text-white w-5 h-5 rounded-full text-xs leading-none">✕</button></div>`).join('');$('lphNote').textContent=(Date.now()>=FREE_UNTIL&&PLAN==='free')?'Free plan: 1 photo per listing. Upgrade for more.':''}
+function showPhotos(id){const i=L.find(x=>x.id===id);if(!i)return;$('lbBody').innerHTML=phs(i).map(u=>`<img src="${esc(u)}" alt="" class="snap-center shrink-0 w-full max-h-[80vh] object-contain">`).join('');$('lb').classList.remove('hidden')}
+function closeLb(){$('lb').classList.add('hidden')}
+const phone=v=>{v=v.replace(/\D/g,'').replace(/^(91|0)(?=\d{10}$)/,'');return /^[6-9]\d{9}$/.test(v)?'91'+v:''};
+async function put(table,item){
+  const {error}=await db.from(table).insert(item);
+  if(error){alert('Could not save: '+error.message);return false}
+  toast('✅ Posted successfully!');await loadData();return true}
+const PARTS=[
+['Tempered Glass','<rect x="11" y="4" width="18" height="32" rx="4" fill="#1e1b4b"/><path d="M15 8h5L13 31" stroke="#a78bfa" stroke-width="1.6" fill="none"/><rect x="11" y="4" width="18" height="32" rx="4" fill="none" stroke="#c4b5fd"/>','Tempered Glass'],
+['Back Cover','<rect x="11" y="4" width="18" height="32" rx="5" fill="#fb7185"/><rect x="14" y="7" width="7" height="7" rx="2" fill="#fff" opacity=".85"/>','Back Cover'],
+['Display / Combo','<rect x="11" y="4" width="18" height="32" rx="3" fill="#111827"/><rect x="13" y="7" width="14" height="24" rx="1.5" fill="#6366f1"/>','Combo / Display'],
+['Middle Frame','<rect x="11" y="4" width="18" height="32" rx="3" fill="none" stroke="#64748b" stroke-width="2.5"/><rect x="15" y="9" width="10" height="16" fill="none" stroke="#94a3b8"/>','Middle Frame'],
+['CC Board','<rect x="8" y="10" width="24" height="20" rx="3" fill="#16a34a"/><rect x="15" y="16" width="10" height="8" fill="#14532d"/><path d="M12 14v-4M20 14v-4M28 14v-4M12 26v4M20 26v4M28 26v4" stroke="#fde047"/>','CC Board'],
+['Battery','<rect x="9" y="11" width="22" height="20" rx="3" fill="#334155"/><rect x="16" y="8" width="8" height="3" fill="#94a3b8"/><path d="M21 15l-4 6h4l-2 5 5-7h-4z" fill="#fde047"/>','Battery'],['Power / Volume Flex','<rect x="14" y="6" width="12" height="28" rx="3" fill="#475569"/><rect x="26" y="12" width="4" height="7" rx="1.5" fill="#94a3b8"/><rect x="26" y="22" width="4" height="7" rx="1.5" fill="#94a3b8"/>','Power Flex']];
+const SK='<div class="card p-4 space-y-3"><div class="flex gap-3"><div class="skel w-16 h-20 rounded-2xl"></div><div class="flex-1 space-y-2"><div class="skel h-4 rounded"></div><div class="skel h-3 w-2/3 rounded"></div></div></div></div>';
+const partIcon=(p,cls)=>`<span class="${cls} inline-block"><img src="img/part-${p[0].toLowerCase().replace(/[^a-z]+/g,'-')}.png" alt="" onload="this.nextElementSibling.style.display='none'" onerror="this.remove()" class="w-full h-full object-contain"><svg viewBox="0 0 40 40" class="w-full h-full">${p[1]}</svg></span>`;
+const SLUG={Apple:'apple',Samsung:'samsung',Xiaomi:'xiaomi',Realme:'realme',Oppo:'oppo',Vivo:'vivo',OnePlus:'oneplus',Motorola:'motorola',Nokia:'nokia',Huawei:'huawei',Honor:'honor',Asus:'asus',Google:'google',Sony:'sony',Nothing:'nothing'};
+function brandImg(b){const ov=MI['brand:'+nz(b)];if(ov)return `<img src="${esc(ov)}" alt="" class="absolute inset-0 w-full h-full p-2 bg-white object-contain">`;const sl=SLUG[b]||String(b).toLowerCase().replace(/\W/g,'');const f=SLUG[b]?`this.onerror=function(){this.remove()};this.src='https://cdn.simpleicons.org/${sl}'`:'this.remove()';
+  return `<img src="img/brand-${sl}.png" alt="" loading="lazy" class="absolute inset-0 w-full h-full p-2 bg-white object-contain" onerror="${f}">`}
+const phs=i=>(i.photos||[]).filter(u=>typeof u==='string'&&u.startsWith(SB_URL));
+const BRANDS=[['Apple',['iphone','apple','ipad']],['Samsung',['samsung','galaxy']],['Xiaomi',['xiaomi','redmi','poco',' mi ']],['Realme',['realme']],['Oppo',['oppo']],['Vivo',['vivo','iqoo']],['OnePlus',['oneplus']],['Motorola',['moto']],['Nokia',['nokia']],['Tecno',['tecno']],['Infinix',['infinix']],['Itel',['itel']],['Lava',['lava']],['Asus',['asus','rog','zenfone']],['Google',['pixel','google']],['Honor',['honor']],['Huawei',['huawei']],['Nothing',['nothing']],['Sony',['sony','xperia']]];
+const brandOf=m=>{const t=' '+String(m).toLowerCase()+' ';for(const [b,k] of BRANDS)if(k.some(w=>t.includes(w)))return b;return 'Other'};
+const nz=x=>String(x).toLowerCase().replace(/\s+/g,''),mst=g=>g.master||g.models[0];
+const thumb=g=>{const u=MI[nz(mst(g))]||g.image;return (u&&/^https:\/\//.test(u))?`<img src="${esc(u)}" alt="" loading="lazy" class="w-full h-full object-contain">`:'<span class="text-3xl">📱</span>'};
+const mimg=m=>{const u=MI[nz(m)];return u?`<img src="${esc(u)}" alt="" loading="lazy" class="w-full h-full object-contain">`:'<span class="text-lg">📱</span>'};
+function gCard(g,i=0){
+  const ms=g.models,nb=new Set(ms.map(brandOf)).size,sv=inv.includes(g.id);
+  return `<div onclick="openGroup(${g.id})" style="animation-delay:${Math.min(i,8)*50}ms" class="card p-4 space-y-3 cursor-pointer transition"><div class="flex gap-3"><div class="w-16 h-20 shrink-0 rounded-2xl bg-gradient-to-br from-violet-100 to-fuchsia-100 flex items-center justify-center overflow-hidden">${thumb(g)}</div>
+  <div class="min-w-0 flex-1"><div class="flex justify-between gap-2"><h3 class="font-extrabold text-[15px] leading-snug">${esc(mst(g))}</h3><button onclick="event.stopPropagation();toggleInv(${g.id})" class="shrink-0 w-9 h-9 rounded-xl border ${sv?'bg-violet-600 border-violet-600 text-white':'border-violet-200 text-violet-500'}">🔖</button></div>
+  <div class="flex flex-wrap items-center gap-1.5 mt-1"><span class="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-lg">★ Reference model</span><span class="text-[10px] font-bold bg-violet-100 text-violet-700 px-2 py-0.5 rounded-lg">${esc(g.part)}</span>${g.screen?`<span class="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-lg">${esc(g.screen)}</span>`:''}${g.verified?'':'<span class="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded-lg">Unverified</span>'}</div>
+  <div class="flex gap-3 mt-2 text-[11px] font-bold text-slate-500"><span>🏷 ${nb} Brand${nb>1?'s':''}</span><span>📱 ${ms.length} Models</span></div></div></div>
+  <div class="flex flex-wrap gap-1.5">${ms.slice(0,5).map(m=>`<span class="text-[11px] bg-violet-50 border border-violet-100 rounded-full px-2.5 py-1">${esc(m)}</span>`).join('')}${ms.length>5?`<span class="text-[11px] bg-violet-600 text-white font-bold rounded-full px-2.5 py-1">+${ms.length-5} more</span>`:''}</div></div>`}
+function filteredGroups(){
+  const qq=nz($('fq').value.trim());
+  return G.filter(g=>(fPart==='ALL'||g.part===fPart)&&(fBrand==='ALL'||g.models.some(m=>brandOf(m)===fBrand))&&(!qq||g.models.some(m=>nz(m).includes(qq))||nz(mst(g)).includes(qq)))
+   .sort((a,b)=>fSort==='models'?b.models.length-a.models.length:mst(a).localeCompare(mst(b)))}
+function renderFinder(){
+  const fp=$('fParts');if(!fp)return;
+  fp.innerHTML=PARTS.map(p=>`<button onclick="fPart=fPart==='${p[0]}'?'ALL':'${p[0]}';renderFinder()" class="w-[92px] shrink-0 rounded-2xl p-2.5 flex flex-col items-center gap-1.5 text-[11px] font-bold leading-tight text-center ${fPart===p[0]?'bg-white ring-2 ring-fuchsia-300 text-violet-700 shadow-lg':'bg-white/90 text-slate-600'}">${partIcon(p,'w-10 h-10'+(fPart===p[0]?' floaty':''))}${p[2]}</button>`).join('');
+  const present=BRANDS.filter(([b])=>G.some(g=>g.models.some(m=>brandOf(m)===b)));
+  $('fBrands').innerHTML=[['ALL','All']].concat(present.map(([b])=>[b,b])).map(([b,l])=>`<button onclick="fBrand='${b}';renderFinder()" class="shrink-0 w-[72px] flex flex-col items-center gap-1.5 text-[11px] font-bold ${fBrand===b?'text-violet-700':'text-slate-600'}"><span class="relative overflow-hidden w-[60px] h-[60px] rounded-2xl flex items-center justify-center text-xl font-black bg-white shadow ${fBrand===b?'ring-2 ring-violet-500 text-violet-700':'text-violet-400'}">${b==='ALL'?'★':l[0]+brandImg(b)}</span>${l}</button>`).join('');
+  $('sA').className='px-3 py-1 rounded-lg '+(fSort==='az'?'bg-white shadow text-violet-700':'text-slate-500');$('sM').className='px-3 py-1 rounded-lg '+(fSort==='models'?'bg-white shadow text-violet-700':'text-slate-500');
+  const gs=filteredGroups(),q=$('fq').value.trim(),qq=nz(q);
+  $('fTitle').textContent=(fPart==='ALL'?'All parts':fPart)+' ('+gs.length+')';
+  let h=!loaded?SK.repeat(3):!G.length?'<div class="card p-5 text-center text-xs text-slate-500">Compatibility data is being added. Meanwhile, check parts for sale.<br><button onclick="tab(\'home\')" class="mt-3 bg-violet-600 text-white font-bold px-4 py-2 rounded-xl">🛍 Parts for sale</button></div>':!gs.length?'<div class="card p-5 text-center text-xs text-slate-500">No match yet for this search.</div>':gs.map(gCard).join('');
+  if(q){const ls=fade(L.filter(x=>x.demo||Date.now()-x.id<45*864e5),DEMO_MIN_L).filter(i=>nz(i.title+' '+(i.fits||'')).includes(qq));
+    if(ls.length)h+='<h2 class="text-xs font-extrabold uppercase tracking-wider text-violet-400 pt-1">Parts for sale ('+ls.length+')</h2>'+ls.map(i=>`<div class="card p-3 flex justify-between items-center gap-2"><div class="min-w-0"><b class="text-xs">${esc(i.title)}</b><p class="text-[10px] text-slate-500">${esc(i.shop)} • ${esc(i.city)}</p></div><div class="text-right shrink-0"><p class="font-black text-violet-600 text-sm">₹${Number(i.price).toLocaleString('en-IN')}</p><button onclick="contact(${i.id})" class="mt-1 bg-emerald-500 text-white text-[11px] px-3 py-1.5 rounded-lg font-bold">${pro?'💬 WhatsApp':'🔒 Contact'}</button></div></div>`).join('')}
+  $('fres').innerHTML=h}
+let cur=null,gMode='brand';
+function openGroup(id){const g=G.find(x=>x.id===id);if(!g)return;cur=g;drawGroup();const v=$('gView');v.classList.remove('hidden');document.body.style.overflow='hidden';v.scrollTop=0}
+function closeGroup(){$('gView').classList.add('hidden');document.body.style.overflow=''}
+function drawGroup(){
+  const g=cur,m=mst(g),sv=inv.includes(g.id);
+  const tiles=PARTS.map(p=>{const gg=G.find(x=>x.part===p[0]&&x.models.some(y=>nz(y)===nz(m))),act=p[0]===g.part;
+    return `<button ${gg?`onclick="openGroup(${gg.id})"`:'disabled'} class="w-[84px] shrink-0 rounded-2xl p-2 flex flex-col items-center gap-1 text-[10px] font-bold leading-tight text-center ${act?'bg-white ring-2 ring-fuchsia-300 text-violet-700 shadow-lg':gg?'bg-white/90 text-slate-600':'bg-white/25 text-white/70'}">${partIcon(p,'w-9 h-9 '+(gg?'':'opacity-40'))}${p[2]}</button>`}).join('');
+  const sp=[['DISPLAY (in)',g.screen],['HEIGHT (mm)',g.height_mm],['WIDTH (mm)',g.width_mm],['SCREEN AREA (cm²)',g.area_cm2],['SCREEN-TO-BODY (%)',g.body_pct]].filter(x=>x[1]);
+  const all=g.models,list=pro?all:all.slice(0,6),hid=all.length-list.length;
+  const chip=x=>`<span class="text-sm rounded-xl border px-3 py-2 ${nz(x)===nz(m)?'bg-amber-50 border-amber-400 text-amber-800 font-bold':'bg-white border-violet-100'}">${nz(x)===nz(m)?'★ ':''}${esc(x)}</span>`;
+  let body='';
+  if(gMode==='brand'){const by=new Map();list.forEach(x=>{const b=brandOf(x);if(!by.has(b))by.set(b,[]);by.get(b).push(x)});
+    body=[...by.entries()].sort((a,b)=>b[1].length-a[1].length).map(([b,ms])=>`<div class="pt-4"><div class="flex items-center gap-2"><span class="relative overflow-hidden w-9 h-9 rounded-xl bg-gradient-to-br from-violet-100 to-fuchsia-100 text-violet-700 font-black flex items-center justify-center">${esc(b[0])}${brandImg(b)}</span><b class="text-sm tracking-wider uppercase">${esc(b)}</b><span class="text-[11px] bg-slate-100 rounded-full px-2 py-0.5 font-bold">${ms.length}</span></div><div class="flex flex-wrap gap-2 mt-2">${ms.map(chip).join('')}</div></div>`).join('')}
+  else if(gMode==='flat')body=`<div class="flex flex-wrap gap-2 pt-4">${list.map(chip).join('')}</div>`;
+  else body=`<div class="pt-3 columns-2 gap-3 text-sm">${list.map(x=>`<p class="py-1.5 border-b border-violet-50 break-inside-avoid ${nz(x)===nz(m)?'font-bold text-amber-700':''}">${esc(x)}</p>`).join('')}</div>`;
+  const tg=(k,l)=>`<button onclick="gMode='${k}';drawGroup()" class="px-3 py-2 rounded-lg text-xs font-bold ${gMode===k?'bg-white shadow text-violet-700':'text-slate-500'}">${l}</button>`;
+  $('gView').innerHTML=`<div class="bg-gradient-to-b from-violet-700 via-violet-600 to-fuchsia-500 px-4 pt-4 pb-16"><div class="flex gap-2.5 overflow-x-auto ns pb-1">${tiles}</div></div>
+  <div class="sheet -mt-10 bg-[#faf7ff] rounded-t-[2rem] px-4 pt-5 pb-28 relative">
+   <div class="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-4"></div>
+   <div class="flex items-center gap-3"><button onclick="closeGroup()" class="w-11 h-11 shrink-0 rounded-full border border-violet-200 bg-white text-lg">‹</button>
+    <div class="w-16 h-20 shrink-0 rounded-2xl bg-gradient-to-br from-violet-100 to-fuchsia-100 flex items-center justify-center overflow-hidden">${thumb(g)}</div>
+    <div class="min-w-0 flex-1"><span class="inline-block text-[10px] font-extrabold bg-amber-100 text-amber-700 px-2 py-1 rounded-lg">★ REFERENCE MODEL</span><p class="text-[11px] font-extrabold tracking-wider text-violet-600 mt-1 uppercase">${esc(g.part)}</p><h2 class="text-xl font-extrabold leading-tight">${esc(m)}</h2></div>
+    ${isAdmin?`<button data-m="${esc(m)}" onclick="pickModelPhoto(this.dataset.m)" class="w-11 h-11 shrink-0 rounded-xl border border-violet-200 bg-white">📷</button>`:''}<button onclick="toggleInv(${g.id});drawGroup()" class="w-11 h-11 shrink-0 rounded-xl border ${sv?'bg-violet-600 border-violet-600 text-white':'border-violet-200 bg-white text-violet-500'}">🔖</button></div>
+   ${g.code?`<p class="mt-4 text-[11px] font-bold text-slate-500 tracking-wider">GROUP CODE <span class="font-mono text-slate-800 text-sm">${esc(g.code)}</span></p>`:''}
+   ${sp.length?`<div class="mt-3 grid grid-cols-3 border border-violet-100 rounded-2xl overflow-hidden bg-white">${sp.map(x=>`<div class="p-3 border-b border-r border-violet-50"><p class="text-[9px] font-extrabold tracking-wider text-slate-400">${x[0]}</p><p class="font-extrabold text-lg">${esc(x[1])}</p></div>`).join('')}</div>`:''}
+   ${g.note?`<p class="mt-3 text-xs text-slate-500">${esc(g.note)}</p>`:''}
+   ${g.verified?'':'<p class="mt-3 text-xs bg-amber-50 border border-amber-200 text-amber-700 rounded-xl p-3">⚠ Unverified reference data. Check the physical part before buying.</p>'}
+   <div class="mt-5 flex items-center justify-between gap-2"><div class="flex items-center gap-2"><h3 class="text-xs font-extrabold tracking-wider text-slate-600">COMPATIBLE DEVICES</h3><span class="text-xs font-extrabold bg-emerald-100 text-emerald-700 rounded-full px-2.5 py-1">${all.length}</span></div><div class="flex bg-violet-100 rounded-xl p-1">${tg('brand','▦ Brands')}${tg('flat','▤ All')}${tg('list','☰ List')}</div></div>
+   ${body}
+   ${hid>0?`<button onclick="closeGroup();tab('pro')" class="mt-4 w-full bg-amber-100 text-amber-700 font-bold rounded-2xl py-3 text-sm">🔒 +${hid} more models. Plans from ₹49</button>`:''}
+  </div>
+  <div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/95 backdrop-blur border-t border-violet-100 p-3 flex gap-2" style="padding-bottom:calc(.75rem + env(safe-area-inset-bottom,0px))"><button onclick="closeGroup()" class="px-5 py-3 rounded-2xl bg-violet-50 text-violet-700 font-bold text-sm">Close</button><button onclick="closeGroup();seeParts(${g.id})" class="flex-1 py-3 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white font-extrabold text-sm">🛍 See parts for sale</button></div>`;
+}
+function toggleInv(id){inv=inv.includes(id)?inv.filter(x=>x!==id):[...inv,id];save('fm_inv',inv);renderFinder();renderInv()}
+function renderInv(){const gs=G.filter(g=>inv.includes(g.id));$('invl').innerHTML=gs.length?gs.map(gCard).join(''):'<div class="card p-5 text-center text-xs text-slate-500">Nothing saved yet. Tap 🔖 on any group in Home.</div>'}
+function renderModels(){const q=nz($('mq').value),mp=new Map();
+  G.forEach(g=>g.models.forEach(m=>{if(!mp.has(m))mp.set(m,new Set());mp.get(m).add(g.part)}));
+  MODELS=[...mp.entries()].sort((a,b)=>a[0].localeCompare(b[0])).filter(([m])=>!q||nz(m).includes(q)).slice(0,400);
+  $('mlist').innerHTML=MODELS.length?MODELS.map(([m,ps],i)=>`<div class="card p-3 flex items-center gap-3"><div class="w-10 h-12 shrink-0 rounded-lg bg-violet-50 overflow-hidden flex items-center justify-center">${mimg(m)}</div><button onclick="goModel(${i})" class="flex-1 min-w-0 text-left"><span class="font-bold text-sm block truncate">${esc(m)}</span><span class="text-[10px] text-slate-500">${[...ps].map(esc).join(' • ')}</span></button>${isAdmin?`<button data-m="${esc(m)}" onclick="pickModelPhoto(this.dataset.m)" class="text-lg shrink-0">📷</button>`:''}</div>`).join(''):'<div class="card p-5 text-center text-xs text-slate-500">No models yet.</div>'}
+function goModel(i){const m=MODELS[i];if(!m)return;fPart='ALL';fBrand='ALL';$('fq').value=m[0];tab('find')}
+function seeParts(id){const g=G.find(x=>x.id===id);if(!g)return;cat='ALL';cond='ALL';favOnly=false;$('city').value='ALL';$('q').value=mst(g);tab('home');render()}
+async function checkAdmin(){try{const {data:{session}}=await db.auth.getSession();if(!session){setAdmin(false);return}const r=await db.from('admins').select('user_id').eq('user_id',session.user.id).maybeSingle();setAdmin(!!(r&&r.data))}catch(e){setAdmin(false)}}
+function setAdmin(v){isAdmin=v;owner=v;$('adminLink').classList.toggle('hidden',!v);$('adminCard').classList.toggle('hidden',!v);$('ownBtn').classList.toggle('hidden',v);if(v)drawBrandAdm();render();renderFinder();renderModels()}
+async function ownerIn(){$('ownMsg').textContent='';const {error}=await db.auth.signInWithPassword({email:$('ownEm').value.trim(),password:$('ownPw').value});if(error)return $('ownMsg').textContent=error.message;await checkAdmin();if(!isAdmin){await db.auth.signOut();return $('ownMsg').textContent='This account is not an admin.'}$('ownPw').value='';closeM('ownM');toast('Admin mode on')}
+async function ownerOut(){await db.auth.signOut();setAdmin(false)}
+function drawBrandAdm(){$('brandAdm').innerHTML=['Apple','Samsung','Xiaomi','Realme','Oppo','Vivo','OnePlus','Motorola','Nokia','Tecno','Infinix','Itel','Lava','Asus','Google','Honor','Huawei','Nothing','Sony'].map(b=>`<button data-m="brand:${b}" onclick="pickModelPhoto(this.dataset.m)" class="text-[11px] font-bold bg-violet-50 border border-violet-100 text-violet-700 rounded-lg px-2.5 py-1.5">📷 ${b}${MI['brand:'+nz(b)]?' ✔':''}</button>`).join('')}
+function compressImg(f,max,cb){const img=new Image();img.onload=()=>{const k=Math.min(1,max/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);c.toBlob(cb,'image/jpeg',.82)};img.src=URL.createObjectURL(f)}
+function pickModelPhoto(name){if(!isAdmin)return;window._mp=name;let i=document.getElementById('mpFile');if(!i){i=document.createElement('input');i.type='file';i.accept='image/*';i.id='mpFile';i.className='hidden';i.onchange=uploadModelPhoto;document.body.appendChild(i)}i.click()}
+function uploadModelPhoto(e){const f=e.target.files[0],key=window._mp;e.target.value='';if(!f||!key||!isAdmin)return;
+  compressImg(f,700,async b=>{const path='models/'+key.replace(/[^a-z0-9]+/gi,'-').toLowerCase()+'-'+Date.now()+'.jpg';
+    const up=await db.storage.from('photos').upload(path,b,{contentType:'image/jpeg'});if(up.error)return alert('Upload failed: '+up.error.message);
+    const url=db.storage.from('photos').getPublicUrl(path).data.publicUrl;const rr=await db.from('model_images').upsert({model:key,url});
+    if(rr.error)return alert('Could not save: '+rr.error.message);MI[nz(key)]=url;toast('Photo saved');renderFinder();renderModels();if(cur&&!$('gView').classList.contains('hidden'))drawGroup();if(key.startsWith('brand:'))drawBrandAdm()})}
+async function del(col,id){if(!db||!isAdmin||!confirm('Delete this permanently?'))return;const {error}=await db.from(col).delete().eq('id',id);if(error)alert(error.message);loadData()}
+function logClick(k,id){try{db.from('clicks').insert({kind:k,ref_id:id}).then(()=>{},()=>{})}catch(e){}}
+function report(kind,id){const why=prompt('What is wrong? (spam, fake, wrong price, already sold)');if(!why||!why.trim())return;
+  db.from('reports').insert({kind,ref_id:id,reason:why.trim().slice(0,200)}).then(x=>toast(x&&x.error?'Could not send report':'Thanks, we will review it'),()=>{})}
+let hashDone=false;
+function openHash(){if(hashDone||!location.hash)return;const e=document.getElementById(location.hash.slice(1));if(e){hashDone=true;e.scrollIntoView({block:'center'});e.classList.add('ring-2','ring-fuchsia-400')}}
+function toast(m){const t=$('toast');t.textContent=m;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),2500)}
+async function addListing(){
+  const t=$('pTitle').value.trim(),p=Number($('pPrice').value),s=$('pShop').value.trim(),ph=phone($('pPhone').value);
+  if(!t||!p||!s||!ph)return alert('Please fill all * fields. Phone must be a valid 10-digit mobile number.');
+  let photos=[];if(lph.length){try{for(const b of lph){const path='l-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.jpg';const {error}=await db.storage.from('photos').upload(path,b,{contentType:'image/jpeg'});if(error)throw error;photos.push(db.storage.from('photos').getPublicUrl(path).data.publicUrl)}}catch(e){return alert('Photo upload failed. Try again or post without photos.')}}
+  if(!await put('listings',{id:Date.now(),title:t,category:$('pCat').value,condition:$('pCond').value,price:p,city:$('pCity').value,shop:s,phone:ph,note:$('pNote').value.trim()||'Direct genuine spare',verified:false,...(photos.length?{photos}:{}),...($('pFits').value.trim()?{fits:$('pFits').value.trim().slice(0,200)}:{})}))return;
+  ['pTitle','pPrice','pShop','pPhone','pNote','pFits'].forEach(i=>$(i).value='');lph=[];closeM('postM');$('q').value='';$('city').value='ALL';cat='ALL';cond='ALL';favOnly=false;$('sort').value='new';tab('home');render();
+}
+async function addReq(){
+  const it=$('rItem').value.trim(),sh=$('rShop').value.trim(),ph=phone($('rPhone').value);
+  if(!it||!sh||!ph)return alert('Please fill all fields. Phone must be a valid 10-digit mobile number.');
+  const b=$('rBtn');b.disabled=true;b.textContent='Posting…';let photo=null;
+  try{if(photoBlob){const path='req-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)+'.jpg';
+    const {error}=await db.storage.from('photos').upload(path,photoBlob,{contentType:'image/jpeg'});
+    if(error)throw error;photo=db.storage.from('photos').getPublicUrl(path).data.publicUrl}}
+  catch(e){b.disabled=false;b.textContent='🔥 Broadcast';return alert('Photo upload failed. Try again or post without a photo.')}
+  const ok=await put('requests',{id:Date.now(),item:it,category:$('rCat').value,city:$('rCity').value,shop:sh,phone:ph,photo});
+  b.disabled=false;b.textContent='🔥 Broadcast';if(!ok)return;
+  photoBlob=null;$('rPrev').classList.add('hidden');$('rPhoto').value='';['rItem','rShop','rPhone'].forEach(i=>$(i).value='');closeM('reqM');tab('req');
+}
+function tab(t){
+  const T=['find','inv','models','home','req','pro'],nv={find:'find',inv:'inv',models:'models',home:'home',req:'home',pro:'pro'};
+  T.forEach(x=>$('tab-'+x).classList.toggle('hidden',x!==t));
+  ['find','inv','models','home','pro'].forEach(x=>$('n-'+x).className='flex flex-col items-center text-[10px] gap-0.5 '+(x===nv[t]?'text-violet-600 font-extrabold':'text-slate-400'));
+  $('fab').classList.toggle('hidden',!(t==='home'||t==='req'));
+  if(t==='find')renderFinder();if(t==='inv')renderInv();if(t==='models')renderModels();scrollTo(0,0)}
+const openM=id=>{$(id).classList.remove('hidden');if(id==='postM')drawLph()},closeM=id=>$(id).classList.add('hidden');
+const SB_URL='https://xtkydfbjfnimaglovzzg.supabase.co',SB_KEY='sb_publishable_HwKGCDcpsEIfq5k-d14Igg_3F-sPDoo';
+async function loadData(){
+  try{
+    const [a,b]=await Promise.all([db.from('listings').select('*').order('id',{ascending:false}).limit(300),db.from('requests').select('*').order('id',{ascending:false}).limit(100)]);
+    if(a.error||b.error)throw(a.error||b.error);
+    L=a.data;R=b.data;$('dbNote').classList.add('hidden');
+  }catch(e){$('dbNote').classList.remove('hidden')}
+  try{const c=await db.from('compat_groups').select('*').order('id',{ascending:false}).limit(3000);if(!c.error)G=c.data||[]}catch(e){}
+  try{const mi=await db.from('model_images').select('*').limit(5000);if(!mi.error){MI={};(mi.data||[]).forEach(x=>{MI[nz(x.model)]=x.url})}}catch(e){}
+  loaded=true;render();renderReqs();renderFinder();openHash();
+}
+function track(){
+  try{
+    let v=localStorage.getItem('fm_vid');if(!v){v=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2);localStorage.setItem('fm_vid',v)}
+    if(!sessionStorage.getItem('fm_seen')){sessionStorage.setItem('fm_seen','1');db.from('visits').insert({visitor:v,ref:(document.referrer||'direct').slice(0,200),ua:navigator.userAgent.slice(0,150)}).then(()=>{},()=>{})}
+    const ch=db.channel('online',{config:{presence:{key:v}}});ch.subscribe(st=>{if(st==='SUBSCRIBED')ch.track({at:Date.now()})});
+  }catch(e){}
+}
+async function connect(){db=window.supabase.createClient(SB_URL,SB_KEY);track();await loadData();refreshPlan();checkAdmin();setInterval(loadData,30000);setInterval(refreshPlan,60000)}
+init();
+</script>
+</body>
+</html>
